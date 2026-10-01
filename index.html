@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>
+<title>מפת הבחירה באפקה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Secular+One&family=IBM+Plex+Sans+Hebrew:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: a semester-column map read right-to-left like the degree itself, with a planner rail beside it and track cards below. */
+:root{
+  --bg:#EDF0F3; --surface:#FFFFFF; --surface2:#F5F7F9; --band:#E3E7EC;
+  --ink:#141B26; --muted:#5A6577; --line:#D1D8E1; --edge:#97A3B4;
+  --accent:#0B4F6C; --need:#1F4FD8; --opens:#0F8A6A; --warn:#B45309; --warnbg:#FDF3E3;
+  --t-ml:#8B3FD9; --t-cyber:#D02B2B; --t-ui:#D98A06; --t-dev:#4F46E5; --t-games:#1E9E4A; --t-data:#0B8FB0; --t-sys:#5B6B82; --t-theory:#D0367F;
+  --f-display:"Secular One","Arial Hebrew",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Hebrew","Arial Hebrew",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F141B; --surface:#18202B; --surface2:#1D2632; --band:#141B24;
+    --ink:#E6EBF1; --muted:#9AA5B5; --line:#2E3948; --edge:#5F6D82;
+    --accent:#7CC4E4; --need:#7FA6FF; --opens:#4FD6A9; --warn:#F2B35B; --warnbg:#2E2414;
+    --t-ml:#B48CF7; --t-cyber:#F57373; --t-ui:#F5B83D; --t-dev:#8F8AF7; --t-games:#57D785; --t-data:#38C8E8; --t-sys:#A2B0C4; --t-theory:#F27BB4;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F141B; --surface:#18202B; --surface2:#1D2632; --band:#141B24;
+  --ink:#E6EBF1; --muted:#9AA5B5; --line:#2E3948; --edge:#5F6D82;
+  --accent:#7CC4E4; --need:#7FA6FF; --opens:#4FD6A9; --warn:#F2B35B; --warnbg:#2E2414;
+  --t-ml:#B48CF7; --t-cyber:#F57373; --t-ui:#F5B83D; --t-dev:#8F8AF7; --t-games:#57D785; --t-data:#38C8E8; --t-sys:#A2B0C4; --t-theory:#F27BB4;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;direction:rtl}
+.wrap{max-width:1500px;margin:0 auto;padding-inline:16px;padding-block:24px 64px;display:flex;flex-direction:column;gap:22px}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;text-wrap:balance;line-height:1.15}
+h1{font-size:clamp(28px,4vw,40px)}
+h2{font-size:24px}
+h3{font-size:19px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,.node:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+header.top{display:flex;flex-wrap:wrap;gap:12px 32px;align-items:end;justify-content:space-between}
+header.top p{margin:6px 0 0;color:var(--muted);max-width:62ch}
+.facts{display:flex;gap:20px;flex-wrap:wrap}
+.fact{display:flex;flex-direction:column}
+.fact b{font-family:var(--f-mono);font-size:22px;font-weight:500}
+.fact span{font-size:12px;color:var(--muted)}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.toolbar .lbl{font-size:12px;color:var(--muted);letter-spacing:.04em;margin-inline-end:4px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13.5px;line-height:1.2}
+.chip i{width:9px;height:9px;border-radius:50%;background:var(--tc,var(--muted));flex:none}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip.ghost{border-style:dashed}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend svg{flex:none}
+.sw{width:14px;height:14px;border-radius:4px;border:1.5px solid var(--line);background:var(--surface);display:inline-block}
+.sw.m{background:var(--surface2);border-style:dashed}
+.sw.sel{background:var(--ink);border-color:var(--ink)}
+
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start}
+@media (max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}}
+
+.graphbox{background:var(--surface);border:1px solid var(--line);border-radius:14px;min-width:0}
+.graphhead{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+.graphhead p{margin:0;font-size:13px;color:var(--muted)}
+.scroller{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+.graph{position:relative;direction:ltr}
+.graph svg{position:absolute;inset:0;pointer-events:none;overflow:visible}
+.colband{position:absolute;top:0;bottom:0;background:var(--band);opacity:.55}
+.colhead{position:absolute;top:10px;direction:rtl;text-align:center;font-size:12px;color:var(--muted)}
+.colhead b{display:block;font-family:var(--f-display);font-weight:400;font-size:16px;color:var(--ink)}
+.yearline{position:absolute;top:8px;bottom:8px;width:0;border-left:1px dashed var(--line)}
+
+.node{position:absolute;direction:rtl;text-align:right;border:1.5px solid var(--line);background:var(--surface);border-radius:9px;padding:6px 9px;display:flex;flex-direction:column;justify-content:center;gap:2px;transition:opacity .15s,border-color .15s,background .15s;min-height:38px}
+.node .nm{font-size:13px;font-weight:600;line-height:1.3;white-space:normal;overflow-wrap:anywhere}
+.node .meta{display:flex;flex-wrap:wrap;align-items:center;gap:2px 7px;font-size:11px;color:var(--muted)}
+.node .meta .mono{font-size:10.5px}
+.node .dots{display:inline-flex;gap:3px;margin-inline-start:auto}
+.node .dots i{width:7px;height:7px;border-radius:50%;background:var(--tc)}
+.node .flag{color:var(--warn);font-weight:700}
+.node.k-m{background:var(--surface2);border-style:dashed}
+.node.k-m .nm{font-weight:500;font-size:12.5px;color:var(--muted)}
+.node.k-s{border-style:double;border-width:3px}
+.node.k-v .kindtag,.node.k-s .kindtag{font-size:10px;border:1px solid var(--line);border-radius:4px;padding:0 4px}
+.node.sel{background:var(--ink);border-color:var(--ink)}
+.node.sel .nm,.node.sel .meta{color:var(--bg)}
+.node.sel .nm::before{content:"✓ ";}
+.node:hover{border-color:var(--ink)}
+.graph.dim .node:not(.hl){opacity:.18}
+.node.anc{border-color:var(--need);border-style:solid;box-shadow:0 0 0 1.5px var(--need)}
+.node.desc{border-color:var(--opens);border-style:solid;box-shadow:0 0 0 1.5px var(--opens)}
+.node.intrack{border-color:var(--tc);border-style:solid;box-shadow:0 0 0 2px var(--tc)}
+.node.focus{box-shadow:0 0 0 3px var(--accent);border-color:var(--accent);border-style:solid}
+
+.edge{fill:none;stroke:var(--edge);stroke-width:1.2;opacity:.32;transition:opacity .15s}
+.edge.conc{stroke-dasharray:4 4}
+.graph.dim .edge{opacity:.04}
+.graph.dim .edge.anc{stroke:var(--need);opacity:1;stroke-width:2}
+.graph.dim .edge.desc{stroke:var(--opens);opacity:1;stroke-width:2}
+.graph.dim .edge.hl{stroke:var(--path,var(--ink));opacity:.85;stroke-width:2}
+.graph.dim .edge.hl.side{stroke:var(--edge);opacity:.5;stroke-width:1.2}
+
+.pathbox{display:flex;flex-direction:column;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--surface2)}
+.pathbox .ttl{font-family:var(--f-display);font-size:17px}
+.trackbtns{display:flex;flex-wrap:wrap;gap:8px}
+.trackbtns .chip{padding:8px 14px;font-size:14px;font-weight:600}
+.trackbtns .chip[aria-pressed="true"]{background:var(--tc);border-color:var(--tc);color:#fff}
+.trackbtns .chip[aria-pressed="true"] i{background:#fff}
+.pathstrip{display:flex;flex-wrap:wrap;gap:6px;align-items:stretch}
+.pathstep{flex:1 1 120px;min-width:0;border:1.5px solid var(--tc);border-radius:10px;background:var(--surface);padding:8px 10px;display:flex;flex-direction:column;gap:4px}
+.pathstep .when{font-size:11.5px;color:var(--muted);font-weight:600}
+.pathstep button{border:none;background:none;padding:0;text-align:right;font-size:13px;line-height:1.35}
+.pathstep button:hover{text-decoration:underline}
+.pathstep .sm{color:var(--muted);font-size:11px}
+.patharrow{align-self:center;color:var(--tc);font-size:18px;flex:none}
+@media (max-width:640px){.patharrow{display:none}}
+
+aside{display:flex;flex-direction:column;gap:16px;position:sticky;top:calc(12px + env(safe-area-inset-top,0px));max-height:calc(100vh - 24px);overflow:auto}
+@media (max-width:1000px){aside{position:static;max-height:none;overflow:visible}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.panel .eyebrow{font-size:11.5px;letter-spacing:.08em;color:var(--muted)}
+.panel .sub{color:var(--muted);font-size:13px;margin:0}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13.5px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0}
+.sec{display:flex;flex-direction:column;gap:6px}
+.sec h4{margin:0;font-size:12.5px;font-weight:600;color:var(--muted)}
+.cl{display:flex;flex-wrap:wrap;gap:6px}
+.cchip{border:1px solid var(--line);background:var(--surface2);border-radius:7px;padding:3px 8px;font-size:12.5px;display:inline-flex;gap:5px;align-items:center}
+.cchip.m{border-style:dashed;color:var(--muted)}
+.cchip.need{border-color:var(--need)}
+.cchip.opens{border-color:var(--opens)}
+.cchip small{color:var(--muted);font-size:11px}
+.btn{border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:9px;padding:8px 14px;font-weight:600;font-size:14px}
+.btn.alt{background:transparent;color:var(--ink)}
+.btn.small{padding:5px 10px;font-size:13px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.note{background:var(--warnbg);color:var(--ink);border-radius:9px;padding:8px 10px;font-size:13px;border:1px solid color-mix(in srgb,var(--warn) 35%,transparent)}
+.note b{color:var(--warn)}
+.close{margin-inline-start:auto;border:none;background:none;font-size:20px;line-height:1;color:var(--muted);padding:2px 6px}
+.dhead{display:flex;gap:8px;align-items:start}
+
+.meter .num{display:flex;align-items:baseline;gap:6px}
+.meter .num b{font-family:var(--f-mono);font-size:30px;font-weight:500}
+.meter .num span{color:var(--muted);font-size:13px}
+.bar{height:10px;border-radius:99px;background:var(--surface2);border:1px solid var(--line);overflow:hidden;margin-top:6px}
+.bar span{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .25s}
+.bar.ok span{background:var(--opens)}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px;font-size:13.5px}
+.checks li{display:flex;gap:8px;align-items:baseline}
+.checks .ic{font-family:var(--f-mono);width:16px;flex:none;text-align:center}
+.checks .ok .ic{color:var(--opens)}
+.checks .bad .ic{color:var(--warn)}
+.plangroup{display:flex;flex-direction:column;gap:4px}
+.plangroup h5{margin:4px 0 0;font-size:12px;color:var(--muted);font-weight:600}
+.prow{display:flex;align-items:center;gap:8px;font-size:13.5px;border-bottom:1px solid var(--line);padding-block:4px}
+.prow button.lnk{border:none;background:none;padding:0;text-align:right;flex:1;min-width:0}
+.prow .cr{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.prow .x{border:none;background:none;color:var(--muted);font-size:16px;padding:0 4px}
+.empty{color:var(--muted);font-size:13.5px;margin:0}
+
+@media (max-width:1000px){
+  #details.open{position:fixed;inset-inline:0;bottom:0;z-index:30;max-height:62vh;overflow:auto;border-radius:16px 16px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.25);padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+}
+
+.tracks{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+@media (max-width:420px){.tracks{grid-template-columns:minmax(0,1fr)}}
+.track{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.track.active{border-color:var(--tc);box-shadow:0 0 0 2px var(--tc)}
+.track .th{display:flex;gap:10px;align-items:center}
+.track .th i{width:14px;height:14px;border-radius:50%;background:var(--tc);flex:none}
+.badge{font-size:11px;border:1px solid var(--line);border-radius:99px;padding:1px 8px;color:var(--muted);white-space:nowrap}
+.badge.off{border-color:var(--tc);color:var(--ink)}
+.track p{margin:0;font-size:13.5px}
+.track .jobs{font-size:12.5px;color:var(--muted)}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.steps li{display:grid;grid-template-columns:92px 1fr auto;gap:8px;font-size:13px;padding-block:4px;border-bottom:1px dashed var(--line);align-items:baseline}
+.steps li .when{font-size:11.5px;color:var(--muted)}
+.steps li .cr{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.steps li button{border:none;background:none;padding:0;text-align:right}
+.steps li.seminar{font-style:normal}
+.steps li.seminar .nm::after{content:" · סמינר";color:var(--muted);font-size:11.5px}
+.tsum{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.tsum b{font-family:var(--f-mono);color:var(--ink);font-weight:500}
+footer{color:var(--muted);font-size:12.5px;max-width:80ch}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>מפת הבחירה</h1>
+      <p>מדעי המחשב, לימודי יום, אפקה. כל קורסי הבחירה, הסמינרים וקורסי השירות מהסילבוס, מסודרים לפי הסמסטר המוקדם ביותר שאפשר לקחת אותם לפי דרישות הקדם.</p>
+    </div>
+    <div class="facts">
+      <div class="fact"><b>20.5</b><span>נ״ז בחירה נדרשות</span></div>
+      <div class="fact"><b>1</b><span>סמינר (2.5 נ״ז, חובה)</span></div>
+      <div class="fact"><b>≤2</b><span>קורסי שירות</span></div>
+      <div class="fact"><b>שנה ב׳</b><span>מתי אפשר להתחיל</span></div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <section class="graphbox">
+      <div class="pathbox">
+        <div class="ttl">הצג את הנתיב למומחיות</div>
+        <div class="trackbtns" id="trackbar"></div>
+        <div class="pathstrip" id="pathstrip" hidden></div>
+      </div>
+      <div class="graphhead">
+        <p>לחצו על קורס כדי לראות מה הוא דורש (כחול) ומה הוא פותח (ירוק). ימין = תחילת התואר.</p>
+        <div class="legend">
+          <span><span class="sw m"></span>חובה</span>
+          <span><span class="sw"></span>בחירה</span>
+          <span><span class="sw sel"></span>בתכנית שלי</span>
+          <span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="var(--edge)" stroke-width="1.6"/></svg>דרישת קדם</span>
+          <span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="var(--edge)" stroke-width="1.6" stroke-dasharray="4 4"/></svg>אפשר במקביל</span>
+          <span><span class="flag" style="color:var(--warn);font-weight:700">!</span>שימו לב לתזמון</span>
+        </div>
+      </div>
+      <div class="scroller" id="scroller"><div class="graph" id="graph"><svg id="edges"></svg></div></div>
+    </section>
+
+    <aside>
+      <div class="panel" id="details" hidden></div>
+      <div class="panel" id="plan"></div>
+    </aside>
+  </div>
+
+  <section style="display:flex;flex-direction:column;gap:12px">
+    <div>
+      <h2>ענפי התמחות</h2>
+      <p class="sub" style="color:var(--muted);margin:4px 0 0">שלושה ענפים הם המקבצים הרשמיים מהסילבוס. השאר הורכבו מתוך רשימת הבחירה לפי תחומי עבודה נפוצים. הקורסים מסודרים לפי הסמסטר המוקדם ביותר.</p>
+    </div>
+    <div class="tracks" id="tracks"></div>
+  </section>
+
+  <footer>מקור: תכנית הלימודים לתואר ראשון במדעי המחשב, לימודי יום (עדכון 11/09/2025). קיום קורסי בחירה מותנה במינימום נרשמים ולא כל הקורסים נפתחים בכל שנה, אז כדאי לוודא מול הייעוץ האקדמי לפני ההרשמה. הבחירות נשמרות רק בדפדפן הזה.</footer>
+</div>
+
+<script>
+// k: m=חובה, e=בחירה, v=קורס שירות, s=סמינר. s (for mandatory) = semester index 0..5. pre = prerequisite, conc = may be taken concurrently.
+const C=[
+ {c:'90901',n:'חדו״א 1',en:'Calculus 1',k:'m',cr:5,s:0},
+ {c:'90905',n:'אלגברה ליניארית',en:'Linear Algebra',k:'m',cr:5,s:0},
+ {c:'10016',n:'מבוא למדעי המחשב',en:'Intro to Computer Science',k:'m',cr:4.5,s:0},
+ {c:'90926',n:'מתמטיקה בדידה',en:'Discrete Mathematics',k:'m',cr:5,s:0},
+ {c:'90902',n:'חדו״א 2',en:'Calculus 2',k:'m',cr:5,s:1,pre:['90901','90905']},
+ {c:'90911',n:'מבוא להסתברות',en:'Intro to Probability',k:'m',cr:3.5,s:1,pre:['90901']},
+ {c:'10128',n:'תכנות מונחה עצמים',en:'Object Oriented Programming',k:'m',cr:4.5,s:1,pre:['10016']},
+ {c:'10145',n:'ארגון המחשב ושפת סף',en:'Computer Organization & Assembly',k:'m',cr:5,s:1,pre:['10016']},
+ {c:'90923',n:'לוגיקה מתמטית',en:'Mathematical Logic for CS',k:'m',cr:3.5,s:2,pre:['90926']},
+ {c:'10117',n:'מבני נתונים',en:'Data Structures',k:'m',cr:5,s:2,pre:['10016']},
+ {c:'10010',n:'מבוא לתכנות מערכות',en:'Intro to System Programming',k:'m',cr:3,s:2,pre:['10128']},
+ {c:'90954',n:'אלגברה ליניארית 2',en:'Linear Algebra 2',k:'m',cr:5,s:2,pre:['90905']},
+ {c:'19101',n:'מבוא לבינה מלאכותית',en:'Intro to AI',k:'m',cr:2.5,s:2,pre:['10016','90902','90911','90926']},
+ {c:'10013',n:'תקשורת מחשבים',en:'Computer Communications',k:'m',cr:3.5,s:3,pre:['10145']},
+ {c:'10139',n:'מודלים חישוביים',en:'Computational Models',k:'m',cr:5,s:3,pre:['90923']},
+ {c:'10120',n:'תכנון וניתוח אלגוריתמים',en:'Design & Analysis of Algorithms',k:'m',cr:5,s:3,pre:['10117']},
+ {c:'10303',n:'מערכות הפעלה',en:'Operating Systems',k:'m',cr:3.5,s:3,pre:['10145','10010']},
+ {c:'10324',n:'מחשוב מקבילי ומבוזר',en:'Parallel Computation',k:'m',cr:4,s:4,pre:['10120']},
+ {c:'10334',n:'קומפילציה',en:'Compilation',k:'m',cr:3.5,s:4,pre:['10139']},
+ {c:'11402',n:'פרויקט – חלק 1',en:'Project in CS, Part 1',k:'m',cr:4,s:4,pre:['10120']},
+ {c:'10014',n:'מבוא להנדסת תוכנה',en:'Intro to Software Engineering',k:'m',cr:4,s:4,pre:['10128']},
+ {c:'10121',n:'אלגוריתמים מתקדמים',en:'Advanced Algorithms',k:'m',cr:4,s:5,pre:['10120','10139']},
+ {c:'11403',n:'פרויקט – חלק 2',en:'Project in CS, Part 2',k:'m',cr:0,s:5,pre:['11402']},
+
+ {c:'10015',n:'סטטיסטיקה',en:'Statistics',k:'e',cr:3,pre:['90911']},
+ {c:'10110',n:'מערכות משובצות מחשב',en:'Embedded Systems',k:'e',cr:2.5,pre:['10010','10145']},
+ {c:'10127',n:'בסיסי נתונים',en:'Database Systems',k:'e',cr:3,pre:['10016'],rec:2},
+ {c:'10142',n:'כלי פיתוח',en:'Development Tools',k:'e',cr:1},
+ {c:'10147',n:'אפיון ממשקי משתמש',en:'User Interfaces Characterization',k:'e',cr:4,pre:['10016'],rec:2},
+ {c:'10149',n:'עקרונות שפות תכנות',en:'Programming Languages Principles',k:'e',cr:4,conc:['10010']},
+ {c:'10313',n:'אבטחת מידע',en:'Data Security',k:'e',cr:2.5,pre:['90905','90911','10013'],rec:3},
+ {c:'10827',n:'אתיקה להנדסת תוכנה',en:'Ethics for Software Engineering',k:'e',cr:3},
+ {c:'10206',n:'תורת המידע',en:'Information Theory',k:'e',cr:2.5,pre:['90911','90905'],rec:4},
+ {c:'10207',n:'בינה מלאכותית למשחקים',en:'AI for Games Development',k:'e',cr:2.5,pre:['10120','10010']},
+ {c:'10208',n:'פיתוח ממשקי משתמש',en:'User Interface Development',k:'e',cr:4,pre:['10128','10147'],rec:3},
+ {c:'10212',n:'תכנות ב-Dot Net',en:'Programming in .NET',k:'e',cr:4,pre:['10128']},
+ {c:'10216',n:'סדנת OOP ב-C++',en:'OOP Workshop with C++',k:'e',cr:3,pre:['10128','10010']},
+ {c:'10219',n:'פיתוח בסביבת iOS',en:'iOS App Development',k:'e',cr:2.5,pre:['10208'],rec:5},
+ {c:'10220',n:'פיתוח משחקים',en:'Game Development',k:'e',cr:2.5,pre:['10128'],rec:5},
+ {c:'10224',n:'מבוא לראייה ממוחשבת',en:'Intro to Computer Vision',k:'e',cr:3,pre:['10245'],rec:3,note:'בסילבוס: למידת מכונה או למידה חישובית.'},
+ {c:'10225',n:'עיצוב חזותי של ממשקים',en:'Visual Design of UIs',k:'e',cr:2.5,pre:['10208'],rec:4},
+ {c:'10227',n:'אבטחת סייבר',en:'Cyber Security',k:'e',cr:2.5,pre:['90905'],conc:['10313'],rec:4},
+ {c:'10228',n:'אבטחת רשתות תקשורת',en:'Network Communication Security',k:'e',cr:2.5,pre:['10313'],rec:5},
+ {c:'10233',n:'פיתוח מאובטח',en:'Secure Development',k:'e',cr:2.5,pre:['10128'],rec:4},
+ {c:'10234',n:'אבטחת מובייל',en:'Mobile Security',k:'e',cr:2.5,pre:['10208'],conc:['10313'],rec:4},
+ {c:'10237',n:'ניתוח רשתות חברתיות',en:'Analysis of Social Networks',k:'e',cr:2.5,pre:['90911']},
+ {c:'10240',n:'רשתות נוירונים ולמידה עמוקה',en:'Neural Networks & Deep Learning',k:'e',cr:3,pre:['90911'],conc:['10245'],rec:4},
+ {c:'10243',n:'רשתות נוירונים לראייה ממוחשבת',en:'CNNs for Computer Vision',k:'e',cr:3,pre:['10224'],rec:4},
+ {c:'10245',n:'למידת מכונה',en:'Machine Learning',k:'e',cr:3,pre:['90911','10117'],rec:3},
+ {c:'10247',n:'עיבוד שפה טבעית',en:'Natural Language Processing',k:'e',cr:2.5,pre:['90911'],conc:['10245']},
+ {c:'10248',n:'קריפטוגרפיה מודרנית',en:'Advanced Topics in Cryptography',k:'e',cr:2.5,pre:['90911','90905'],conc:['10313'],rec:4},
+ {c:'10250',n:'אלגוריתמים אקראיים, מקורבים ומקוונים',en:'Advanced Topics in Algorithms',k:'e',cr:2.5,pre:['90911','10121'],note:'דורש את אלגוריתמים מתקדמים, שבתכנית הרגילה נלמד בשנה ג׳ סמ׳ ב׳. אפשרי רק אם מקדימים את אלגוריתמים מתקדמים לשנה ג׳ סמ׳ א׳.'},
+ {c:'10266',n:'פיתוח בפלטפורמות WEB',en:'Development on Web Platforms',k:'e',cr:3,pre:['10128','10208'],rec:5},
+ {c:'10267',n:'סדנת עיצוב ופיתוח משחקים',en:'Games Design & Production Workshop',k:'e',cr:2.5,pre:['10220']},
+ {c:'10342',n:'גרפיקה ממוחשבת',en:'Computer Graphics',k:'e',cr:4,pre:['10010']},
+ {c:'10346',n:'מתודולוגיות Agile',en:'Agile Programming Methods',k:'e',cr:2.5,conc:['10014']},
+ {c:'10351',n:'ניתוח נתוני עתק',en:'Big Data Analytics',k:'e',cr:2.5,pre:['10127','90911'],rec:4},
+ {c:'10354',n:'בלוקצ׳יין: חזון ופרקטיקה',en:'Blockchain Vision and Practice',k:'e',cr:2.5,pre:['10128']},
+ {c:'10358',n:'אנליזה מתמטית של רשתות',en:'Mathematical Analysis of Networks',k:'e',cr:2.5,pre:['90902','90911']},
+ {c:'10359',n:'רכבים אוטונומיים והנדסת אנוש',en:'Autonomous Vehicles & Human Factors in AI',k:'e',cr:2.5,pre:['10015','10128'],rec:3,note:'בסילבוס: סטטיסטיקה או הסקה סטטיסטית. המקבץ הרשמי של למידת מכונה לא כולל את סטטיסטיקה, ולכן היא נוספה לענף.'},
+
+ {c:'40112',n:'מבוא לחקר ביצועים',en:'Intro to Operations Research',k:'v',cr:3,pre:['90905','90911']},
+ {c:'40120',n:'מודלים סטוכסטיים',en:'Stochastic Models',k:'v',cr:3,pre:['40112','90911']},
+ {c:'40215',n:'תורת המשחקים',en:'Game Theory',k:'v',cr:2.5,pre:['90905','90911']},
+ {c:'40225',n:'כריית מידע',en:'Data Mining',k:'v',cr:2.5,pre:['10127','90911']},
+ {c:'40236',n:'אופטימיזציה וייצור מבוזר',en:'Optimization & Distributed Production',k:'v',cr:2.5,pre:['90902','90926','10120']},
+
+ {c:'11015',n:'סמינר במדעי המחשב',en:'Seminar in Computer Science',k:'s',cr:2.5,pre:['10120']},
+ {c:'10221',n:'סמינר בטכנולוגיות סלולריות',en:'Seminar in Cellular Technology',k:'s',cr:2.5,pre:['10208']},
+ {c:'10352',n:'סמינר בסייבר',en:'Cyber Seminar',k:'s',cr:2.5,pre:['10313']},
+ {c:'10355',n:'סמינר בלמידה חישובית',en:'Seminar in Machine Learning',k:'s',cr:2.5,pre:['10120']},
+ {c:'10356',n:'סמינר בשפות תכנות',en:'Seminar in Non-procedural Languages',k:'s',cr:2.5,pre:['10149']},
+];
+
+const T=[
+ {id:'ml',n:'למידת מכונה ו-AI',off:true,sem:'10355',courses:['10127','10015','10245','10224','10359','10240','10243','10351','10206'],
+  d:'המקבץ הרשמי. השרשרת המרכזית: למידת מכונה, ממנה ראייה ממוחשבת ורשתות נוירונים, ואחריהן רשתות לראייה ממוחשבת. בסיסי נתונים פותח את ניתוח נתוני עתק.',
+  j:'ML Engineer · Data Scientist · Computer Vision · מחקר AI'},
+ {id:'cyber',n:'סייבר',off:true,sem:'10352',courses:['10147','10208','10313','10233','10227','10248','10234','10228'],
+  d:'המקבץ הרשמי. הוא כולל את אפיון ופיתוח ממשקי משתמש כי אבטחת מובייל דורשת אותם. הצוואר בבקבוק הוא אבטחת מידע, שדורשת תקשורת מחשבים (שנה ב׳ סמ׳ ב׳), ולכן רוב השרשרת נדחסת לשנה ג׳.',
+  j:'Security Researcher · AppSec · Pentester · Network Security'},
+ {id:'ui',n:'ממשקי משתמש ומובייל',off:true,sem:'10221',courses:['10147','10208','10313','10225','10234','10220','10219','10266'],
+  d:'המקבץ הרשמי. הכול מתחיל באפיון ממשקי משתמש בשנה ב׳ סמ׳ א׳, וממנו פיתוח ממשקי משתמש, שפותח את iOS, Web ועיצוב חזותי. אם לא לוקחים אפיון בזמן, כל הענף מתעכב.',
+  j:'Frontend · Mobile (iOS) · UX Engineer'},
+ {id:'dev',n:'פיתוח תוכנה ו-Full Stack',off:false,sem:'11015',courses:['10142','10127','10147','10212','10208','10233','10346','10266'],
+  d:'לא מקבץ רשמי. מורכב מהקורסים שהכי קרובים לעבודה יומיומית כמפתח: בסיסי נתונים, Web, .NET, פיתוח מאובטח ו-Agile. כלי פיתוח הוא נקודה אחת בלי דרישות קדם, טוב להשלמה.',
+  j:'Full Stack · Backend · Software Engineer'},
+ {id:'games',n:'פיתוח משחקים וגרפיקה',off:false,sem:'11015',courses:['10220','10212','40215','10216','10267','10342','10207'],
+  d:'לא מקבץ רשמי. פיתוח משחקים פותח את הסדנה, וגרפיקה ממוחשבת ו-C++ נותנים בסיס למנועים. .NET רלוונטי ל-Unity (C#). תורת המשחקים היא קורס שירות.',
+  j:'Game Developer · Graphics Programmer · Unity / Unreal'},
+ {id:'data',n:'דאטה ו-Big Data',off:false,sem:'10355',courses:['10015','10127','10237','10206','10245','10247','40225','10351'],
+  d:'לא מקבץ רשמי. צד הניתוח של הנתונים: סטטיסטיקה, בסיסי נתונים, כריית מידע ו-Big Data, עם למידת מכונה ו-NLP. כריית מידע היא קורס שירות.',
+  j:'Data Analyst · Data Engineer · Data Scientist'},
+ {id:'sys',n:'מערכות ו-Low Level',off:false,sem:'10356',courses:['10142','10149','10216','10110','10342','10233','10313','10228'],
+  d:'לא מקבץ רשמי. קרוב לחומרה ולביצועים: מערכות משובצות, C++, גרפיקה, שפות תכנות ואבטחת רשתות. עקרונות שפות תכנות פותח את סמינר שפות התכנות.',
+  j:'Embedded · C++ · Infrastructure · Kernel / Firmware'},
+ {id:'theory',n:'תאוריה ואלגוריתמים',off:false,sem:'11015',courses:['10015','10149','10206','10237','10358','40215','40236','10250'],
+  d:'לא מקבץ רשמי. מתאים למי ששוקל תואר שני: תורת המידע, אנליזה של רשתות, אופטימיזציה ותורת המשחקים (שני קורסי שירות, המקסימום המותר). אלגוריתמים אקראיים דורש תזמון מיוחד.',
+  j:'מחקר · תואר שני · Algorithm Engineer'},
+];
+
+const NEED=20.5, MAXV=2, KEY='afeka-electives-v1';
+const KIND={m:'חובה',e:'בחירה',v:'קורס שירות',s:'סמינר'};
+const SEMS=[['א׳','א׳'],['א׳','ב׳'],['ב׳','א׳'],['ב׳','ב׳'],['ג׳','א׳'],['ג׳','ב׳']];
+const semLabel=i=>`שנה ${SEMS[i][0]} · סמ׳ ${SEMS[i][1]}`;
+const B={}; C.forEach(x=>{B[x.c]=x;x.pre=x.pre||[];x.conc=x.conc||[];x.tr=[];});
+T.forEach(t=>{t.courses.forEach(c=>B[c].tr.push(t.id));if(!B[t.sem].tr.includes(t.id))B[t.sem].tr.push(t.id);});
+const TB={};T.forEach((t,i)=>{TB[t.id]=t;t.i=i;});
+const kids={};C.forEach(x=>{x.pre.forEach(p=>(kids[p]=kids[p]||[]).push({c:x.c,conc:false}));x.conc.forEach(p=>(kids[p]=kids[p]||[]).push({c:x.c,conc:true}));});
+
+function early(x){
+  if(x._e!=null)return x._e;
+  if(x.k==='m')return x._e=x.s;
+  let e=2;
+  x.pre.forEach(p=>e=Math.max(e,early(B[p])+1));
+  x.conc.forEach(p=>e=Math.max(e,early(B[p])));
+  if(e>5){x.late=true;e=5;}
+  return x._e=e;
+}
+C.forEach(early);
+C.forEach(x=>{if(x.rec!=null&&x.rec<x._e)x.recConflict=true;});
+
+function anc(code,set=new Set()){const x=B[code];[...x.pre,...x.conc].forEach(p=>{if(!set.has(p)){set.add(p);anc(p,set);}});return set;}
+function desc(code,set=new Set()){(kids[code]||[]).forEach(k=>{if(!set.has(k.c)){set.add(k.c);desc(k.c,set);}});return set;}
+
+// ---------- state ----------
+const state={focus:null,hover:null,track:null,planView:false,sel:new Set(),seminar:null};
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s){(s.sel||[]).forEach(c=>B[c]&&state.sel.add(c));if(s.seminar&&B[s.seminar])state.seminar=s.seminar;}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({sel:[...state.sel],seminar:state.seminar}));}catch(e){}}
+
+// ---------- nodes (created first so their real text height can be measured) ----------
+const COLW=212,NW=184,PAD=14,TOP=62,GAP=7,NCOL=6;
+const graph=document.getElementById('graph'),svg=document.getElementById('edges');
+const nodeEl={};
+const dots=x=>x.tr.length?`<span class="dots">${x.tr.map(id=>`<i style="--tc:var(--t-${id})" title="${TB[id].n}"></i>`).join('')}</span>`:'';
+C.forEach(x=>{
+  const b=document.createElement('button');
+  b.className='node k-'+x.k;b.type='button';b.dataset.code=x.c;
+  b.style.width=NW+'px';
+  b.title=`${x.n} · ${x.en}`;
+  const flag=(x.late||x.recConflict)?'<span class="flag">!</span>':'';
+  const tag=x.k==='v'?'<span class="kindtag">שירות</span>':x.k==='s'?'<span class="kindtag">סמינר</span>':'';
+  b.innerHTML=x.k==='m'
+    ?`<span class="nm">${x.n}</span><span class="meta"><span class="mono">${x.c}</span><span>${x.cr} נ״ז</span><span style="margin-inline-start:auto">חובה</span></span>`
+    :`<span class="nm">${x.n}</span><span class="meta"><span class="mono">${x.c}</span><span>${x.cr} נ״ז</span>${tag}${flag}${dots(x)}</span>`;
+  b.addEventListener('click',e=>{e.stopPropagation();setFocus(state.focus===x.c?null:x.c);});
+  b.addEventListener('mouseenter',()=>{if(!state.focus&&matchMedia('(hover:hover)').matches){state.hover=x.c;applyHL();}});
+  b.addEventListener('mouseleave',()=>{if(state.hover===x.c){state.hover=null;applyHL();}});
+  graph.appendChild(b);nodeEl[x.c]=b;
+});
+
+// column bands + headers (static)
+for(let ci=0;ci<NCOL;ci++){
+  const x=PAD+(NCOL-1-ci)*COLW-(COLW-NW)/2;
+  if(ci<2){const b=document.createElement('div');b.className='colband';b.style.left=x+'px';b.style.width=COLW+'px';graph.prepend(b);}
+  const h=document.createElement('div');h.className='colhead';h.style.left=(PAD+(NCOL-1-ci)*COLW)+'px';h.style.width=NW+'px';
+  h.innerHTML=`<b>שנה ${SEMS[ci][0]}</b>סמסטר ${SEMS[ci][1]}${ci<2?' · חובה בלבד':''}`;graph.prepend(h);
+  if(ci%2===0&&ci>0){const l=document.createElement('div');l.className='yearline';l.style.left=(x+COLW)+'px';graph.prepend(l);}
+}
+graph.insertBefore(svg,nodeEl[C[0].c]);
+
+// ---------- layout + edges (re-run when fonts finish loading) ----------
+const NS='http://www.w3.org/2000/svg';let edges=[];
+const kindOrd={m:0,e:1,v:2,s:3};
+const trIdx=x=>x.k==='s'?99:(x.tr.length?Math.min(...x.tr.map(id=>TB[id].i)):98);
+function layout(){
+  const cols=[...Array(NCOL)].map(()=>[]);
+  C.forEach(x=>{x._y=null;x._h=nodeEl[x.c].offsetHeight;cols[x._e].push(x);});
+  let H=0;
+  cols.forEach((list,ci)=>{
+    list.forEach(x=>{const ps=[...x.pre,...x.conc].map(p=>B[p]).filter(p=>p._y!=null&&p._e<ci);x._bc=ps.length?ps.reduce((a,p)=>a+p._y,0)/ps.length:0;});
+    list.sort((a,b)=>kindOrd[a.k]-kindOrd[b.k]||trIdx(a)-trIdx(b)||a._bc-b._bc);
+    let y=TOP,prev=null;
+    list.forEach(x=>{
+      if(prev&&prev.k!==x.k)y+=14;
+      x._x=PAD+(NCOL-1-ci)*COLW;x._y=y;y+=x._h+GAP;prev=x;
+      nodeEl[x.c].style.left=x._x+'px';nodeEl[x.c].style.top=x._y+'px';
+    });
+    H=Math.max(H,y+PAD);
+  });
+  const W=PAD*2+NCOL*COLW-(COLW-NW);
+  graph.style.width=W+'px';graph.style.height=H+'px';
+  svg.setAttribute('width',W);svg.setAttribute('height',H);svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.replaceChildren();edges=[];
+  C.forEach(x=>{
+    [...x.pre.map(p=>[p,false]),...x.conc.map(p=>[p,true])].forEach(([p,conc])=>{
+      const a=B[p];let d;
+      const sy=a._y+a._h/2,ey=x._y+x._h/2;
+      if(a._e<x._e){const sx=a._x,ex=x._x+NW,dx=Math.max(30,(sx-ex)/2);d=`M${sx} ${sy} C${sx-dx} ${sy} ${ex+dx} ${ey} ${ex} ${ey}`;}
+      else{const sx=a._x,ex=x._x,o=34;d=`M${sx} ${sy} C${sx-o} ${sy} ${ex-o} ${ey} ${ex} ${ey}`;}
+      const el=document.createElementNS(NS,'path');el.setAttribute('d',d);el.setAttribute('class','edge'+(conc?' conc':''));svg.appendChild(el);
+      edges.push({from:p,to:x.c,el,conc});
+    });
+  });
+}
+layout();
+graph.addEventListener('click',()=>{if(state.focus)setFocus(null);});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&state.focus)setFocus(null);});
+
+// ---------- highlight ----------
+function applyHL(){
+  const f=state.focus||state.hover;
+  Object.values(nodeEl).forEach(el=>{el.classList.remove('hl','anc','desc','focus','intrack');el.style.removeProperty('--tc');});
+  edges.forEach(e=>e.el.classList.remove('anc','desc','hl'));
+  C.forEach(x=>nodeEl[x.c].classList.toggle('sel',state.sel.has(x.c)||state.seminar===x.c));
+  let dim=false;
+  if(f){
+    dim=true;const A=anc(f),D=desc(f);
+    nodeEl[f].classList.add('hl','focus');
+    A.forEach(c=>nodeEl[c].classList.add('hl','anc'));
+    D.forEach(c=>nodeEl[c].classList.add('hl','desc'));
+    edges.forEach(e=>{
+      if(A.has(e.from)&&(A.has(e.to)||e.to===f))e.el.classList.add('anc');
+      else if((D.has(e.from)||e.from===f)&&D.has(e.to))e.el.classList.add('desc');
+    });
+  }else if(state.track||state.planView){
+    dim=true;
+    let M;
+    if(state.track){const t=TB[state.track];M=new Set([...t.courses,t.sem]);}
+    else{M=new Set([...state.sel]);if(state.seminar)M.add(state.seminar);}
+    const all=new Set(M);M.forEach(c=>anc(c).forEach(a=>all.add(a)));
+    all.forEach(c=>nodeEl[c].classList.add('hl'));
+    M.forEach(c=>{nodeEl[c].classList.add('intrack');nodeEl[c].style.setProperty('--tc',state.track?`var(--t-${state.track})`:'var(--accent)');});
+    edges.forEach(e=>{if(all.has(e.from)&&all.has(e.to)){e.el.classList.add('hl');e.el.classList.toggle('side',!M.has(e.to));}});
+    graph.style.setProperty('--path',state.track?`var(--t-${state.track})`:'var(--accent)');
+  }
+  edges.forEach(e=>{if(!e.el.classList.contains('hl'))e.el.classList.remove('side');});
+  graph.classList.toggle('dim',dim);
+}
+
+// ---------- details ----------
+const det=document.getElementById('details');
+const chip=(c,cls='')=>{const x=B[c];return `<button class="cchip ${x.k==='m'?'m':''} ${cls}" data-go="${c}">${x.n}${x.k==='m'?' <small>חובה</small>':''}</button>`;};
+function setFocus(c){
+  state.focus=c;state.hover=null;applyHL();renderDetails();
+  if(c){const el=nodeEl[c],sc=document.getElementById('scroller');const l=el.offsetLeft,r=l+NW;if(l<sc.scrollLeft||r>sc.scrollLeft+sc.clientWidth)sc.scrollTo({left:l-(sc.clientWidth-NW)/2,behavior:'smooth'});}
+}
+function inPlan(c){return state.sel.has(c)||state.seminar===c;}
+function renderDetails(){
+  const c=state.focus;
+  if(!c){det.hidden=true;det.classList.remove('open');return;}
+  const x=B[c];det.hidden=false;det.classList.add('open');
+  const A=[...anc(c)].map(a=>B[a]).sort((a,b)=>a._e-b._e);
+  const direct=[...x.pre.map(p=>chip(p,'need')),...x.conc.map(p=>chip(p,'need').replace('</button>',' <small>במקביל</small></button>'))];
+  const k=(kids[c]||[]).map(o=>chip(o.c,'opens'));
+  let notes='';
+  if(x.late)notes+=`<div class="note"><b>תזמון:</b> ${x.note}</div>`;
+  else if(x.note)notes+=`<div class="note">${x.note}</div>`;
+  if(x.recConflict)notes+=`<div class="note"><b>שימו לב:</b> המקבץ הרשמי ממליץ על ${semLabel(x.rec)}, אבל לפי דרישות הקדם הכי מוקדם זה ${semLabel(x._e)}. כדאי לבדוק עם הייעוץ האקדמי אם אפשר לקחת במקביל.</div>`;
+  let action='';
+  if(x.k==='s')action=state.seminar===c?`<button class="btn alt" data-act="unsem">הסר מהסמינר שלי</button>`:`<button class="btn" data-act="sem">בחר כסמינר שלי</button>`;
+  else if(x.k!=='m')action=state.sel.has(c)?`<button class="btn alt" data-act="rm">הסר מהתכנית</button>`:`<button class="btn" data-act="add">הוסף לתכנית</button>`;
+  det.innerHTML=`
+    <div class="dhead"><div><div class="eyebrow">${KIND[x.k]} · <span class="mono">${x.c}</span></div><h3>${x.n}</h3><p class="sub">${x.en}</p></div><button class="close" data-act="close" aria-label="סגור">×</button></div>
+    <dl class="kv"><dt>נ״ז</dt><dd class="mono">${x.cr}</dd><dt>${x.k==='m'?'בתכנית':'הכי מוקדם'}</dt><dd>${semLabel(x._e)}</dd>
+    ${x.tr.length?`<dt>ענפים</dt><dd class="cl">${x.tr.map(id=>`<button class="chip" style="--tc:var(--t-${id});padding:2px 9px;font-size:12px" data-track="${id}"><i></i>${TB[id].n}</button>`).join('')}</dd>`:''}</dl>
+    ${notes}
+    <div class="sec"><h4>דרישות קדם ישירות</h4>${direct.length?`<div class="cl">${direct.join('')}</div>`:'<p class="empty">אין</p>'}</div>
+    ${A.length>direct.length?`<div class="sec"><h4>כל השרשרת שצריך לפני (${A.length})</h4><div class="cl">${A.map(a=>chip(a.c,'need')).join('')}</div></div>`:''}
+    <div class="sec"><h4>פותח את</h4>${k.length?`<div class="cl">${k.join('')}</div>`:'<p class="empty">לא פותח קורסים אחרים</p>'}</div>
+    ${action?`<div class="btns">${action}</div>`:''}`;
+}
+det.addEventListener('click',e=>{
+  const go=e.target.closest('[data-go]');if(go){setFocus(go.dataset.go);return;}
+  const tr=e.target.closest('[data-track]');if(tr){setFocus(null);setTrack(tr.dataset.track);return;}
+  const a=e.target.closest('[data-act]');if(!a)return;const c=state.focus;
+  ({close:()=>setFocus(null),add:()=>state.sel.add(c),rm:()=>state.sel.delete(c),sem:()=>state.seminar=c,unsem:()=>state.seminar=null})[a.dataset.act]();
+  if(a.dataset.act!=='close'){save();applyHL();renderDetails();renderPlan();renderTracks();}
+});
+
+// ---------- plan ----------
+const plan=document.getElementById('plan');let clearArmed=null;
+function renderPlan(){
+  const sel=[...state.sel].map(c=>B[c]);
+  const sum=sel.reduce((a,x)=>a+x.cr,0);
+  const nv=sel.filter(x=>x.k==='v').length;
+  const warns=[];
+  [...sel,...(state.seminar?[B[state.seminar]]:[])].forEach(x=>{
+    x.pre.forEach(p=>{if(B[p].k!=='m'&&!inPlan(p))warns.push(`<b>${x.n}</b> דורש את <b>${B[p].n}</b>, שלא בתכנית.`);});
+    x.conc.forEach(p=>{if(B[p].k!=='m'&&!inPlan(p))warns.push(`<b>${x.n}</b> דורש את <b>${B[p].n}</b> (אפשר במקביל), שלא בתכנית.`);});
+    if(x.late)warns.push(`<b>${x.n}</b>: ${x.note}`);
+  });
+  if(nv>MAXV)warns.push(`בחרת ${nv} קורסי שירות. מותר לכל היותר ${MAXV}.`);
+  const ok=sum>=NEED;
+  const groups=[0,1,2,3,4,5].map(i=>({i,items:sel.filter(x=>x._e===i).sort((a,b)=>a.n.localeCompare(b.n,'he'))})).filter(g=>g.items.length);
+  plan.innerHTML=`
+    <div><div class="eyebrow">התכנית שלי</div></div>
+    <div class="meter"><div class="num"><b>${sum%1?sum.toFixed(1):sum}</b><span>מתוך ${NEED} נ״ז בחירה${ok?'':` · חסרות ${(NEED-sum).toFixed(1).replace('.0','')}`}</span></div><div class="bar ${ok?'ok':''}"><span style="width:${Math.min(100,sum/NEED*100)}%"></span></div></div>
+    <ul class="checks">
+      <li class="${ok?'ok':'bad'}"><span class="ic">${ok?'✓':'○'}</span>${ok?'הגעת ל-20.5 נ״ז בחירה':'עוד לא הגעת ל-20.5 נ״ז בחירה'}</li>
+      <li class="${state.seminar?'ok':'bad'}"><span class="ic">${state.seminar?'✓':'○'}</span>${state.seminar?`סמינר: ${B[state.seminar].n}`:'עוד לא נבחר סמינר'}</li>
+      <li class="${nv<=MAXV?'ok':'bad'}"><span class="ic">${nv<=MAXV?'✓':'!'}</span>קורסי שירות: ${nv} מתוך ${MAXV} מותרים</li>
+      ${warns.length?'':`<li class="ok"><span class="ic">✓</span>כל דרישות הקדם מכוסות</li>`}
+    </ul>
+    ${warns.length?`<div class="note" style="display:flex;flex-direction:column;gap:4px">${warns.map(w=>`<span>${w}</span>`).join('')}</div>`:''}
+    ${groups.length?groups.map(g=>`<div class="plangroup"><h5>אפשר החל מ${semLabel(g.i)}</h5>${g.items.map(x=>`<div class="prow"><button class="lnk" data-go="${x.c}">${x.n}${x.k==='v'?' <small style="color:var(--muted)">(שירות)</small>':''}</button><span class="cr">${x.cr}</span><button class="x" data-rm="${x.c}" aria-label="הסר">×</button></div>`).join('')}</div>`).join('')
+      :'<p class="empty">עוד לא בחרת קורסים. לחצו על קורס בגרף ואז ״הוסף לתכנית״, או הוסיפו ענף שלם מהרשימה למטה.</p>'}
+    <div class="btns">
+      <button class="btn alt small" data-act="view" aria-pressed="${state.planView}">${state.planView?'הצג את כל הקורסים':'הדגש את התכנית בגרף'}</button>
+      ${sel.length||state.seminar?`<button class="btn alt small" data-act="clear">${clearArmed?'בטוח? לחצו שוב':'נקה הכל'}</button>`:''}
+    </div>`;
+}
+plan.addEventListener('click',e=>{
+  const go=e.target.closest('[data-go]');if(go){setFocus(go.dataset.go);return;}
+  const rm=e.target.closest('[data-rm]');if(rm){state.sel.delete(rm.dataset.rm);save();refresh();return;}
+  const a=e.target.closest('[data-act]');if(!a)return;
+  if(a.dataset.act==='view'){state.planView=!state.planView;if(state.planView)state.track=null;refresh();}
+  if(a.dataset.act==='clear'){
+    if(clearArmed){clearTimeout(clearArmed);clearArmed=null;state.sel.clear();state.seminar=null;save();refresh();}
+    else{clearArmed=setTimeout(()=>{clearArmed=null;renderPlan();},3000);renderPlan();}
+  }
+});
+
+// ---------- tracks ----------
+const bar=document.getElementById('trackbar'),tracksEl=document.getElementById('tracks');
+T.forEach(t=>{const b=document.createElement('button');b.className='chip'+(t.off?'':' ghost');b.style.setProperty('--tc',`var(--t-${t.id})`);b.dataset.track=t.id;b.innerHTML=`<i></i>${t.n}`;bar.appendChild(b);});
+{const b=document.createElement('button');b.className='chip';b.dataset.track='';b.textContent='כל הקורסים';bar.prepend(b);}
+bar.addEventListener('click',e=>{const b=e.target.closest('[data-track]');if(b)setTrack(!b.dataset.track||state.track===b.dataset.track?null:b.dataset.track);});
+function setTrack(id){state.track=id;if(id)state.planView=false;state.focus=null;refresh();}
+const strip=document.getElementById('pathstrip');
+function renderPath(){
+  const t=state.track&&TB[state.track];
+  if(!t){strip.hidden=true;strip.innerHTML='';return;}
+  strip.hidden=false;strip.style.setProperty('--tc',`var(--t-${t.id})`);
+  const items=[...t.courses,t.sem].map(c=>B[c]);
+  const steps=[2,3,4,5].map(i=>({i,xs:items.filter(x=>x._e===i)})).filter(g=>g.xs.length);
+  strip.innerHTML=steps.map((g,k)=>`${k?'<span class="patharrow" aria-hidden="true">←</span>':''}<div class="pathstep"><span class="when">${semLabel(g.i)}</span>${g.xs.map(x=>`<button data-go="${x.c}">${x.n}${x.k==='s'?' <span class="sm">(סמינר)</span>':x.k==='v'?' <span class="sm">(שירות)</span>':''}${x.late||x.recConflict?' <span style="color:var(--warn);font-weight:700">!</span>':''}</button>`).join('')}</div>`).join('');
+}
+strip.addEventListener('click',e=>{const go=e.target.closest('[data-go]');if(go)setFocus(go.dataset.go);});
+function renderTracks(){
+  renderPath();
+  bar.querySelectorAll('[data-track]').forEach(b=>b.setAttribute('aria-pressed',(state.track||'')===b.dataset.track));
+  tracksEl.innerHTML=T.map(t=>{
+    const list=t.courses.map(c=>B[c]).sort((a,b)=>a._e-b._e);
+    const sum=list.reduce((a,x)=>a+x.cr,0);
+    const all=t.courses.every(c=>state.sel.has(c));
+    const s=B[t.sem];
+    return `<article class="track ${state.track===t.id?'active':''}" style="--tc:var(--t-${t.id})">
+      <div class="th"><i></i><h3>${t.n}</h3><span class="badge ${t.off?'off':''}">${t.off?'מקבץ רשמי':'לא רשמי'}</span></div>
+      <p>${t.d}</p>
+      <div class="jobs">${t.j}</div>
+      <ol class="steps">${list.map(x=>`<li><span class="when">${semLabel(x._e)}</span><button data-go="${x.c}"><span class="nm">${x.n}</span>${x.k==='v'?' <small style="color:var(--muted)">(שירות)</small>':''}${x.late||x.recConflict?' <span style="color:var(--warn);font-weight:700">!</span>':''}</button><span class="cr">${x.cr}</span></li>`).join('')}
+        <li class="seminar"><span class="when">${semLabel(s._e)}</span><button data-go="${s.c}"><span class="nm">${s.n}</span></button><span class="cr">${s.cr}</span></li></ol>
+      <div class="tsum"><span>סה״כ בחירה בענף</span><span><b>${sum%1?sum.toFixed(1):sum}</b> נ״ז ${sum>=NEED?'· מכסה את כל הדרישה':`· חסרות ${(NEED-sum).toFixed(1).replace('.0','')}`}</span></div>
+      <div class="btns"><button class="btn small" data-add="${t.id}">${all?'הענף כבר בתכנית':'הוסף את הענף לתכנית'}</button><button class="btn alt small" data-show="${t.id}">${state.track===t.id?'הסר הדגשה':'הדגש בגרף'}</button></div>
+    </article>`;}).join('');
+}
+tracksEl.addEventListener('click',e=>{
+  const go=e.target.closest('[data-go]');if(go){setFocus(go.dataset.go);return;}
+  const ad=e.target.closest('[data-add]');if(ad){const t=TB[ad.dataset.add];t.courses.forEach(c=>state.sel.add(c));if(!state.seminar)state.seminar=t.sem;save();refresh();return;}
+  const sh=e.target.closest('[data-show]');if(sh){const on=state.track!==sh.dataset.show;setTrack(on?sh.dataset.show:null);if(on)document.querySelector('.graphbox').scrollIntoView({behavior:'smooth',block:'start'});}
+});
+
+function refresh(){applyHL();renderDetails();renderPlan();renderTracks();}
+refresh();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{layout();applyHL();});
+// start scrolled to the right edge (year 1) so the map reads from the start of the degree
+requestAnimationFrame(()=>{const sc=document.getElementById('scroller');sc.scrollLeft=sc.scrollWidth;});
+</script>
+
+</body></html>
